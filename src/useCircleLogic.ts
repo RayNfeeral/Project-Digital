@@ -28,9 +28,12 @@ export const useCircleLogic = () => {
     return { top, left };
   });
   const [isActive, setIsActive] = useState(false);
+  const [isFadingIn, setIsFadingIn] = useState(false);
+  const [isFadedIn, setIsFadedIn] = useState(false);
   const [visibilityToggle, setVisibilityToggle] = useState(0);
   const timer = useRef<NodeJS.Timeout | null>(null);
   const longPressTimer = useRef<NodeJS.Timeout | null>(null);
+  const fadeInTimer = useRef<NodeJS.Timeout | null>(null);
   const ref = useRef<HTMLDivElement>(null);
 
   const clearInactivityTimer = useCallback(() => {
@@ -46,17 +49,43 @@ export const useCircleLogic = () => {
     }, HIDE_TIMEOUT);
   }, [clearInactivityTimer]);
 
+  const fadeIn = useCallback(() => {
+    if (fadeInTimer.current) clearTimeout(fadeInTimer.current)
+    setIsFadedIn(false);
+    setIsFadingIn(true);
+    fadeInTimer.current = setTimeout(() => {
+      setIsFadedIn(true);
+      setIsFadingIn(false);
+    }, 1000);
+  }, []);
+
   useEffect(() => {
-    if (visible) resetInactivityTimer();
+    const onContextMenu = window.oncontextmenu;
+    window.oncontextmenu = (e) => e.preventDefault();
+
+    return () => {window.oncontextmenu = onContextMenu};  
+  }, [])
+
+  useEffect(() => {
+    if (visible) {
+      resetInactivityTimer();
+      fadeIn();
+      return () => {
+        clearInactivityTimer();
+      };
+    }
+    setIsFadingIn(false);
+    setIsFadedIn(false);
     return () => {
       clearInactivityTimer();
     };
-  }, [visible, resetInactivityTimer, clearInactivityTimer]);
+  }, [visible, resetInactivityTimer, clearInactivityTimer, fadeIn]);
 
   useEffect(() => {
     const handleScreenClick = () => {
       if (!visible) {
         setVisible(true);
+        setIsActive(false); // Reset active state on reappear
         setVisibilityToggle((v) => v + 1); // Force re-render
       }
     };
@@ -71,7 +100,8 @@ export const useCircleLogic = () => {
   const handleJump = useCallback(() => {
     setPosition(getRandomPosition());
     resetInactivityTimer();
-  }, [resetInactivityTimer]);
+    fadeIn();
+  }, [fadeIn, resetInactivityTimer]);
 
   const handleMouseDown = useCallback(() => {
     setIsActive(true);
@@ -106,11 +136,8 @@ export const useCircleLogic = () => {
   return {
     visible,
     style: {
-      position: 'fixed' as const,
       top: position.top,
       left: position.left,
-      zIndex: 1000,
-      cursor: 'pointer',
     },
     ref,
     isActive,
@@ -119,5 +146,7 @@ export const useCircleLogic = () => {
     handleTouchStart,
     handleTouchEnd,
     visibilityToggle,
+    isFadingIn,
+    isFadedIn,
   };
 }; 

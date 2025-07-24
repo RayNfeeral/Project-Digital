@@ -19,6 +19,13 @@ globalStyle('body', {
 
 globalStyle('*', {
   boxSizing: 'border-box',
+  userSelect: 'none',
+  'WebkitTapHighlightColor': 'transparent',
+})
+
+globalStyle(':root', {
+   touchAction: 'pan-x pan-y',
+   height: '100%',
 })
 
 export const mainContainer = style({

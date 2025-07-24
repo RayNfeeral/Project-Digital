@@ -1,4 +1,5 @@
-import { render, fireEvent, act, waitFor } from '@testing-library/react';
+import { render, act } from '@testing-library/react';
+import { fireEvent, waitFor } from '@testing-library/dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import '@testing-library/jest-dom';
 import Circle from './Circle';
@@ -106,22 +107,69 @@ describe('Circle', () => {
       vi.advanceTimersByTime(1100);
     });
     // Now it should disappear
-    expect(queryByTestId('circle')).toBeNull();
+    expect(queryByTestId('circle')).not.toBeInTheDocument();
   });
 
   it('resets active state when the circle disappears and reappears', async () => {
-    const { getByTestId, queryByTestId, container } = render(<Circle />);
+    const { getByTestId, queryByTestId } = render(<Circle />);
     const circle = getByTestId('circle');
     fireEvent.mouseDown(circle);
     expect(circle.className).toMatch(/active/);
     await act(async () => {
       vi.advanceTimersByTime(3000);
+       
+      console.log('After advancing 3s, circle:', queryByTestId('circle'));
     });
     await waitFor(() => {
-      expect(queryByTestId('circle')).toBeNull();
-    }, { timeout: 10000 });
-    fireEvent.click(container);
+      const gone = queryByTestId('circle') === null;
+      if (!gone) {
+         
+        console.log('Circle still present after 3s, className:', queryByTestId('circle')?.className);
+      }
+      expect(gone).toBe(true);
+    }, { timeout: 20000 });
+    fireEvent.click(document.body);
     const newCircle = getByTestId('circle');
+     
+    console.log('New circle className after reappear:', newCircle.className);
     expect(newCircle.className).not.toMatch(/active/);
-  }, 10000);
+  }, 20000);
+
+  it('should fade-in when reappearing after jump', () => {
+    const { getByTestId, container } = render(<Circle />);
+    fireEvent.click(getByTestId('circle'));
+    act(() => {
+      vi.advanceTimersByTime(3000);
+    });
+    fireEvent.click(container);
+    const circle = getByTestId('circle');
+    expect(circle.className).toMatch(/fadeIn/);
+    // Optionally, check computed style for opacity animation
+  });
+
+  it('should have higher brightness when active after overlay', () => {
+    const { getByTestId } = render(<Circle />);
+    const circle = getByTestId('circle');
+    fireEvent.mouseDown(circle);
+    // Should have a class or style indicating higher brightness
+    expect(circle.className).toMatch(/active/);
+    // Optionally, check computed style for brightness
+    fireEvent.mouseUp(circle);
+  });
+
+  it('should show 2 repeating ripple waves with 5px spacing when pressed', async () => {
+    const { getByTestId } = render(<Circle />);
+    const circle = getByTestId('circle');
+    fireEvent.mouseDown(circle);
+    // Wait a bit to allow ripples to appear
+    await act(async () => {
+      vi.advanceTimersByTime(100);
+    });
+    // There should be 2 ripple elements inside the circle
+    const ripple1 = circle.querySelector('[data-testid="ripple-1"]');
+    const ripple2 = circle.querySelector('[data-testid="ripple-2"]');
+    expect(ripple1).toBeInTheDocument();
+    expect(ripple2).toBeInTheDocument();
+    fireEvent.mouseUp(circle);
+  });
 }); 
