@@ -1,0 +1,10 @@
+---
+description: Vanilla-extract + Vitest Integration
+alwaysApply: false
+---
+# Vanilla-extract + Vitest Integration
+
+- Always ensure `vitest.config.ts` extends the Vite config and includes the vanilla-extract plugin for correct style processing in tests.
+- When adding or editing test files that import vanilla-extract CSS, verify that the test environment is set to `jsdom` and that the config uses the Vite plugin pipeline.
+- If you encounter style-related errors in tests, check that the Vite config (with vanilla-extract) is properly merged into Vitest config.
+- Use `@testing-library/react` for React component tests to ensure compatibility with vanilla-extract styles.
